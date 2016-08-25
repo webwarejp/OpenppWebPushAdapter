@@ -1,0 +1,23 @@
+{
+    "name": "openpp/web-push-adapter",
+    "type": "library",
+    "description": "Web Push (VAPID) adapter for sly/notification-pusher",
+    "keywords": ["web push", "vapid" ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "webware,Inc."
+        }
+    ],
+    "require": {
+        "sly/notification-pusher": "^2.2",
+        "jdr/jws-ecdsa": "^0.1.0",
+        "spomky-labs/base64url": "^1.0",
+        "spomky-labs/php-aes-gcm": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Openpp\\WebPushAdapter\\": "src/"
+        }
+    }
+}
