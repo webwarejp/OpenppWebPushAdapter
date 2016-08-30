@@ -1,6 +1,6 @@
 <?php
 
-namespace Openpp\WebPusherAdapter\Encrytptor;
+namespace Openpp\WebPushAdapter\Encrytptor;
 
 use Mdanter\Ecc\EccFactory;
 use Mdanter\Ecc\Serializer\Point\UncompressedPointSerializer;
@@ -143,7 +143,7 @@ class MessageEncryptor
         $context = $this->createContext($userPublicKey);
 
         // derive the Content Encryption Key
-        $contentEncryptionKey = self::hkdf($this->salt, $ikm, self::createInfo('aesgcm128', $context), 16);
+        $contentEncryptionKey = self::hkdf($this->salt, $ikm, self::createInfo('aesgcm', $context), 16);
 
         // derive nonce
         $nonce = self::hkdf($this->salt, $ikm, self::createInfo('nonce', $context), 12);
@@ -218,7 +218,7 @@ class MessageEncryptor
         $label = 'P-256';
         // The two length fields are encoded as a two octet unsigned integer in network byte order.
         $recipientPublicLength = chr(0) . chr(strlen($userPublicKey));
-        $senderPublicLength = chr(0) . chr(strlrn($this->publicKeyContent));
+        $senderPublicLength = chr(0) . chr(strlen($this->publicKeyContent));
 
         return $label . chr(0) . $recipientPublicLength . $userPublicKey . $senderPublicLength . $this->publicKeyContent;
     }

@@ -3,13 +3,17 @@
 namespace Openpp\WebPushAdapter\Adapter;
 
 use Sly\NotificationPusher\Adapter\BaseAdapter;
+use Sly\NotificationPusher\Model\PushInterface;
 use Sly\NotificationPusher\Exception\PushException;
 use Sly\NotificationPusher\Exception\AdapterException;
+use Sly\NotificationPusher\Collection\DeviceCollection;
 use Base64Url\Base64Url;
 use Lcobucci\JWT\Builder;
 use Lcobucci\JWT\Signer\Key;
 use JDR\JWS\ECDSA\ES256;
-use Openpp\WebPusherAdapter\Encrytptor\MessageEncryptor;
+use Openpp\WebPushAdapter\Encrytptor\MessageEncryptor;
+use Openpp\WebPushAdapter\Util\PublicKeyUtil;
+
 
 /**
  * Web Push (VAPID) Adapter for sly/notification-pusher
@@ -108,32 +112,33 @@ class Web extends BaseAdapter
             $newOrigin = $this->getOrigin($endPoint);
             if (is_null($token) || $orign != $newOrigin) {
                 $origin = $newOrigin;
-                $token = $this->createSignatureToken($endPoint);
+                $token = $this->createSignatureToken($this->getOrigin($endPoint));
             }
 
             $headers = $client->getRequest()->getHeaders();
             $headers
-                ->addHeaderLine('Crypto-Key', 'p256ecdsa=' . $cryptoKey)
-                ->addHeaderLine('Authorization', 'WebPush ' . $token)
+                ->addHeaderLine('Crypto-Key', 'p256ecdsa="' . $cryptoKey . '"')
+                ->addHeaderLine('Authorization', 'Bearer ' . $token)
             ;
 
             if ($hasMessage) {
                 $body = $encryptor->encrypt(
                     $push->getMessage()->getText(),
-                    $device->getPublicKey(),
-                    $device->getAuthToken()
+                    Base64Url::decode($device->getPublicKey()),
+                    Base64Url::decode($device->getAuthToken())
                 );
 
                 $headers
-                    ->addHeaderLine('Content-Encoding', 'aesgcm128')
+                    ->addHeaderLine('Content-Encoding', 'aesgcm')
                     ->addHeaderLine('Encryption', 'keyid="p256dh";salt="' .$encryptor->getSalt() .'"')
                 ;
-                $cryptoKey = $headers->get('Crypto-Key');
-                $cryptoKey .= ';keyid="p256dh";dh="'. $encryptor->getServerPublicKey() .'"';
-                $headers->addHeaderLine('Crypto-Key', $cryptoKey);
+                $cryptoKeyHead = $headers->get('Crypto-Key');
+                $cryptoKeyValue = 'keyid="p256dh";dh="'. $encryptor->getServerPublicKey() .'"' . ';' . $cryptoKeyHead->getFieldValue();
+                $headers->addHeaderLine('Crypto-Key', $cryptoKeyValue);
 
                 $encType = 'application/octet-stream';
             } else {
+                $headers->addHeaderLine('Content-length', 0);
                 $body = '';
                 $encType = null;
             }
@@ -154,7 +159,7 @@ class Web extends BaseAdapter
                                      ->setEncType($encType)
                                      ->send();
 
-            switch ($response->getStatusCode()) {
+            switch ($this->response->getStatusCode()) {
                 case 500:
                     throw new PushException('500 Internal Server Error');
                     break;
@@ -218,19 +223,17 @@ class Web extends BaseAdapter
      */
     private function getCryptoKey()
     {
-        $publicKey = new Key($this->getParameter('publicKey'));
-
-        return Base64Url::encode($publicKey->getContent());
+        return Base64Url::encode(PublicKeyUtil::getKeyFromPem($this->getParameter('publicKey')));
     }
 
     /**
      *  Get the origin (Section 6.1 of [RFC6454]) of the push resource URL.
      *
-     * @param string $endpoint
+     * @param string $endPoint
      *
      * @return string
      */
-    private function getOrigin($endpoint)
+    private function getOrigin($endPoint)
     {
         $url = parse_url($endPoint);
         $origin = $url['scheme'] . '://' . $url['host'];
@@ -253,11 +256,11 @@ class Web extends BaseAdapter
     private function createSignatureToken($origin, \DateTime $expiration = null)
     {
         if (is_null($expiration)) {
-            $expiration = new \DateTime('+ 24 hours');
+            $expiration = new \DateTime('+ 1 hours');
         }
 
         $signer = new ES256();
-        $privateKey = new Key($this->getParameter('privateKey'));
+        $privateKey = new Key('file://' . $this->getParameter('privateKey'));
 
         $builder = new Builder();
         $token = $builder
