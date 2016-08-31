@@ -138,7 +138,6 @@ class Web extends BaseAdapter
 
                 $encType = 'application/octet-stream';
             } else {
-                $headers->addHeaderLine('Content-length', 0);
                 $body = '';
                 $encType = null;
             }
@@ -174,6 +173,7 @@ class Web extends BaseAdapter
                     throw new PushException('401 Forbidden; Authentication Error');
                     break;
                 case 400:
+                    // TODO: FCM returns 400 on sending to the unsubscribed endpoint.
                     throw new PushException('400 Bad Request; invalid message');
                     break;
             }
