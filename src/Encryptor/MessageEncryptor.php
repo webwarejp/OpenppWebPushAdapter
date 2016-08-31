@@ -112,6 +112,19 @@ class MessageEncryptor
     }
 
     /**
+     * @param string $message
+     *
+     * @return string
+     */
+    public static function padMessage($message)
+    {
+        $messageLen = strlen($message);
+        $padLen     = self::MAX_MESSAGE_LENGTH - $messageLen;
+
+        return pack('n*', $padLen).str_pad($message, $padLen + $messageLen, chr(0), STR_PAD_LEFT);
+    }
+
+    /**
      * Encrypt the message for Web Push.
      *
      * @param string  $message
@@ -129,11 +142,14 @@ class MessageEncryptor
             ));
         }
 
+        // pad the message
+        $message = self::padMessage($message);
+
         if ($regenerateKeys) {
             $this->initialize();
         }
 
-        // get shared secret
+        // get the shared secret
         $sharedSecret = $this->getSharedSecret($userPublicKey);
 
         $ikm = !empty($userAuthToken) ?
@@ -145,10 +161,14 @@ class MessageEncryptor
         // derive the Content Encryption Key
         $contentEncryptionKey = self::hkdf($this->salt, $ikm, self::createInfo('aesgcm', $context), 16);
 
-        // derive nonce
+        // derive the nonce
         $nonce = self::hkdf($this->salt, $ikm, self::createInfo('nonce', $context), 12);
 
-        list($encryptedText, $tag) = \AESGCM\AESGCM::encrypt($contentEncryptionKey, $nonce, $message, "");
+        if (version_compare(PHP_VERSION, '7.1') >= 0) {
+            $encryptedText = openssl_encrypt($payload, 'aes-128-gcm', $contentEncryptionKey, OPENSSL_RAW_DATA, $nonce, $tag);
+        } else {
+            list($encryptedText, $tag) = \AESGCM\AESGCM::encrypt($contentEncryptionKey, $nonce, $message, "");
+        }
 
         return $encryptedText . $tag;
     }
