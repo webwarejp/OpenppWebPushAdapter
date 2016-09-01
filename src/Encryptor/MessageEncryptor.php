@@ -75,7 +75,7 @@ class MessageEncryptor
     /**
      * Generate key pare and salt.
      */
-    public function initialize()
+    private function initialize()
     {
         // generate key pair.
         $this->privateKey = $this->generator->createPrivateKey();
@@ -148,6 +148,9 @@ class MessageEncryptor
         if ($regenerateKeys) {
             $this->initialize();
         }
+
+        $userPublicKey = Base64Url::decode($userPublicKey);
+        $userAuthToken = Base64Url::decode($userAuthToken);
 
         // get the shared secret
         $sharedSecret = $this->getSharedSecret($userPublicKey);

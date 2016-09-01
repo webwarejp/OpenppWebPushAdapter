@@ -100,12 +100,6 @@ class Web extends BaseAdapter
         $orign     = null;
         $token     = null;
 
-        $hasMessage = false;
-        if ($push->getMessage()->getText()) {
-            $encryptor = $this->getMessageEncryptor();
-            $hasMessage = true;
-        }
-
         foreach ($push->getDevices() as $device) {
             $endPoint  = $device->getToken();
 
@@ -121,11 +115,12 @@ class Web extends BaseAdapter
                 ->addHeaderLine('Authorization', 'Bearer ' . $token)
             ;
 
-            if ($hasMessage) {
+            if (!empty($push->getMessage()->getText())) {
+                $encryptor = $this->getMessageEncryptor();
                 $body = $encryptor->encrypt(
                     $push->getMessage()->getText(),
-                    Base64Url::decode($device->getPublicKey()),
-                    Base64Url::decode($device->getAuthToken())
+                    $device->getPublicKey(),
+                    $device->getAuthToken()
                 );
 
                 $headers
