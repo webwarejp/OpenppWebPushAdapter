@@ -115,12 +115,15 @@ class Web extends BaseAdapter
                 ->addHeaderLine('Authorization', 'Bearer ' . $token)
             ;
 
-            if (!empty($push->getMessage()->getText())) {
+            if (!empty($push->getMessage()->getText())
+                && !empty($device->getParameter('publicKey'))
+                && !empty($device->getParameter('authToken'))
+            ) {
                 $encryptor = $this->getMessageEncryptor();
                 $body = $encryptor->encrypt(
                     $push->getMessage()->getText(),
-                    $device->getPublicKey(),
-                    $device->getAuthToken()
+                    $device->getParameter('publicKey'),
+                    $device->getParameter('authToken')
                 );
 
                 $headers
