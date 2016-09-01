@@ -106,7 +106,7 @@ class Web extends BaseAdapter
             $newOrigin = $this->getOrigin($endPoint);
             if (is_null($token) || $orign != $newOrigin) {
                 $origin = $newOrigin;
-                $token = $this->createSignatureToken($this->getOrigin($endPoint));
+                $token = $this->createSignatureToken($origin);
             }
 
             $headers = $client->getRequest()->getHeaders();
