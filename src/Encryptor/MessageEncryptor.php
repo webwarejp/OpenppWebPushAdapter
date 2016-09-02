@@ -1,6 +1,6 @@
 <?php
 
-namespace Openpp\WebPushAdapter\Encrytptor;
+namespace Openpp\WebPushAdapter\Encryptor;
 
 use Mdanter\Ecc\EccFactory;
 use Mdanter\Ecc\Serializer\Point\UncompressedPointSerializer;

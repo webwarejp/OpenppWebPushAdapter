@@ -11,7 +11,7 @@ use Base64Url\Base64Url;
 use Lcobucci\JWT\Builder;
 use Lcobucci\JWT\Signer\Key;
 use JDR\JWS\ECDSA\ES256;
-use Openpp\WebPushAdapter\Encrytptor\MessageEncryptor;
+use Openpp\WebPushAdapter\Encryptor\MessageEncryptor;
 use Openpp\WebPushAdapter\Util\PublicKeyUtil;
 
 
