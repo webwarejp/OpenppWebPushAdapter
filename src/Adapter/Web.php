@@ -13,6 +13,7 @@ use Lcobucci\JWT\Signer\Key;
 use JDR\JWS\ECDSA\ES256;
 use Openpp\WebPushAdapter\Encryptor\MessageEncryptor;
 use Openpp\WebPushAdapter\Util\PublicKeyUtil;
+use Sly\NotificationPusher\Model\Message;
 
 
 /**
@@ -96,9 +97,11 @@ class Web extends BaseAdapter
         $client        = $this->getOpenedClient();
         $pushedDevices = new DeviceCollection();
 
-        $cryptoKey = $this->getCryptoKey();
+        $ecdsaCryptoKey = $this->getECDSACryptoKey();
         $orign     = null;
         $token     = null;
+
+        $message = $this->createMessageBody($push->getMessage());
 
         foreach ($push->getDevices() as $device) {
             $endPoint  = $device->getToken();
@@ -111,17 +114,17 @@ class Web extends BaseAdapter
 
             $headers = $client->getRequest()->getHeaders();
             $headers
-                ->addHeaderLine('Crypto-Key', 'p256ecdsa="' . $cryptoKey . '"')
+                ->addHeaderLine('Crypto-Key', 'p256ecdsa="' . $ecdsaCryptoKey . '"')
                 ->addHeaderLine('Authorization', 'Bearer ' . $token)
             ;
 
-            if (!empty($push->getMessage()->getText())
+            if (!empty($message)
                 && !empty($device->getParameter('publicKey'))
                 && !empty($device->getParameter('authToken'))
             ) {
                 $encryptor = $this->getMessageEncryptor();
                 $body = $encryptor->encrypt(
-                    $push->getMessage()->getText(),
+                    $message,
                     $device->getParameter('publicKey'),
                     $device->getParameter('authToken')
                 );
@@ -202,11 +205,24 @@ class Web extends BaseAdapter
     }
 
     /**
-     * Get message encryptor.
+     * Create message body.
+     *
+     * @param Message $message
+     */
+    protected function createMessageBody(Message $message)
+    {
+        $body = $message->getOptions();
+        $body['message'] = $message->getText();
+
+        return json_encode($body);
+    }
+
+    /**
+     * Get the message encryptor.
      *
      * @return \Openpp\WebPusherAdapter\Encrytptor\MessageEncryptor
      */
-    private function getMessageEncryptor()
+    protected function getMessageEncryptor()
     {
         if (!isset($this->messageEncryptor)) {
             $this->messageEncryptor = new MessageEncryptor();
@@ -219,7 +235,7 @@ class Web extends BaseAdapter
      * Get the ECDSA public key encoded by the URL- and filename-safe variant of
      * base-64 [RFC4648] with padding removed.
      */
-    private function getCryptoKey()
+    protected function getECDSACryptoKey()
     {
         return Base64Url::encode(PublicKeyUtil::getKeyFromPem($this->getParameter('publicKey')));
     }
@@ -231,7 +247,7 @@ class Web extends BaseAdapter
      *
      * @return string
      */
-    private function getOrigin($endPoint)
+    protected function getOrigin($endPoint)
     {
         $url = parse_url($endPoint);
         $origin = $url['scheme'] . '://' . $url['host'];
@@ -251,7 +267,7 @@ class Web extends BaseAdapter
      *
      * @return Token
      */
-    private function createSignatureToken($origin, \DateTime $expiration = null)
+    protected function createSignatureToken($origin, \DateTime $expiration = null)
     {
         if (is_null($expiration)) {
             $expiration = new \DateTime('+ 1 hours');

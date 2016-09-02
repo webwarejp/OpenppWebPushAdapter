@@ -10,7 +10,7 @@ Web Push (VAPID) adapter for [sly/notification-pusher](https://github.com/Ph3nol
 
     <?php
     
-    // First, instantiate the manager and declare an adapter.
+    // First, instantiate the manager and declare the adapter.
     $pushManager    = new \Sly\NotificationPusher\PushManager();
     $webPushAdapter = new \Openpp\WebPushAdapter\Adapter\Web(array(
         'publicKey'  => '/path/to/servers/public_key.pem',  // ECDSA public key path for the VAPID
@@ -40,10 +40,30 @@ Web Push (VAPID) adapter for [sly/notification-pusher](https://github.com/Ph3nol
     ));
     
     // Then, create the push skel.
-    $message = new Sly\NotificationPusher\Model\Message('This is an example.');
+    $message = new Sly\NotificationPusher\Model\Message('This is an example.', array(
+        'title' => 'Web Push Test',
+    ));
     
     // Finally, create and add the push to the manager, and push it!
     $push = new Sly\NotificationPusher\Model\Push($webPushAdapter, $devices, $message);
     $pushManager->add($push);
     $pushManager->push();
 
+## Service Worker example
+
+This adapter sends the message as JSON. The key of message text is `"message"`.
+
+    self.addEventListener('push', function(event) {
+      var obj = event.data.json();
+    
+      var title = obj.title;
+      var message = obj.message;
+      var icon = 'push-icon.png';
+      var tag = 'push';
+    
+      event.waitUntil(self.registration.showNotification(title, {
+        body: message,
+        icon: icon,
+        tag: tag
+       }));
+     });
