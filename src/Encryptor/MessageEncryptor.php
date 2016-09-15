@@ -168,7 +168,7 @@ class MessageEncryptor
         $nonce = self::hkdf($this->salt, $ikm, self::createInfo('nonce', $context), 12);
 
         if (version_compare(PHP_VERSION, '7.1') >= 0) {
-            $encryptedText = openssl_encrypt($payload, 'aes-128-gcm', $contentEncryptionKey, OPENSSL_RAW_DATA, $nonce, $tag);
+            $encryptedText = openssl_encrypt($message, 'aes-128-gcm', $contentEncryptionKey, OPENSSL_RAW_DATA, $nonce, $tag);
         } else {
             list($encryptedText, $tag) = \AESGCM\AESGCM::encrypt($contentEncryptionKey, $nonce, $message, "");
         }
