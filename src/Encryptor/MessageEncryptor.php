@@ -7,7 +7,6 @@ use Mdanter\Ecc\Serializer\Point\UncompressedPointSerializer;
 use Mdanter\Ecc\Curves\CurveFactory;
 use Mdanter\Ecc\Curves\NistCurve;
 use Base64Url\Base64Url;
-use Mdanter\Ecc\Crypto\Key\PublicKey;
 
 class MessageEncryptor
 {
@@ -88,6 +87,7 @@ class MessageEncryptor
     }
 
     /**
+     * @param boolean $raw
      * @return string
      */
     public function getServerPublicKey($raw = false)
@@ -100,6 +100,7 @@ class MessageEncryptor
     }
 
     /**
+     * @param boolean $raw
      * @return string
      */
     public function getSalt($raw = false)
@@ -213,7 +214,7 @@ class MessageEncryptor
      * @param string $salt A non-secret random value
      * @param string $ikm  Input keying material
      * @param string $info  Application-specific context
-     * @param intger $length  The length (in bytes) of the required output key
+     * @param integer $length  The length (in bytes) of the required output key
      *
      * @return string
      */

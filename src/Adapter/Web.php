@@ -3,6 +3,8 @@
 namespace Openpp\WebPushAdapter\Adapter;
 
 use Sly\NotificationPusher\Adapter\BaseAdapter;
+use Sly\NotificationPusher\Model\BaseOptionedModel;
+use Sly\NotificationPusher\Model\MessageInterface;
 use Sly\NotificationPusher\Model\PushInterface;
 use Sly\NotificationPusher\Exception\PushException;
 use Sly\NotificationPusher\Exception\AdapterException;
@@ -13,7 +15,6 @@ use Lcobucci\JWT\Signer\Key;
 use JDR\JWS\ECDSA\ES256;
 use Openpp\WebPushAdapter\Encryptor\MessageEncryptor;
 use Openpp\WebPushAdapter\Util\PublicKeyUtil;
-use Sly\NotificationPusher\Model\Message;
 
 
 /**
@@ -45,7 +46,7 @@ class Web extends BaseAdapter
             $key = $this->getParameter($keyName);
 
             if (false === file_exists($key)) {
-                throw new AdapterException(sprintf('%s %s does not exist', $keyName, $privateKey));
+                throw new AdapterException(sprintf('%s %s does not exist', $keyName, $key));
             }
         }
     }
@@ -143,13 +144,17 @@ class Web extends BaseAdapter
                 $encType = null;
             }
 
-            $headers->addHeaderLine('TTL', $push->getMessage()->getOption('ttl', $this->getParameter('ttl')));
+            $messageObj = $push->getMessage();
+            if($messageObj instanceof BaseOptionedModel)
+            {
+                $headers->addHeaderLine('TTL', $messageObj->getOption('ttl', $this->getParameter('ttl')));
 
-            if ($push->getMessage()->hasOption('urgency')) {
-                $headers->addHeaderLine('Urgency', $push->getMessage()->getOption('urgency'));
-            }
-            if ($push->getMessage()->hasOption('topic')) {
-                $headers->addHeaderLine('Topic', $push->getMessage()->getOption('topic'));
+                if ($messageObj->hasOption('urgency')) {
+                    $headers->addHeaderLine('Urgency', $messageObj->getOption('urgency'));
+                }
+                if ($messageObj->hasOption('topic')) {
+                    $headers->addHeaderLine('Topic', $messageObj->getOption('topic'));
+                }
             }
 
             $this->response = $client->setUri($endPoint)
@@ -165,7 +170,7 @@ class Web extends BaseAdapter
                     break;
                 case 503:
                     $exceptionMessage = '503 Server Unavailable';
-                    if ($retry = $response->getHeaders()->get('Retry-After')) {
+                    if ($retry = $this->response->getHeaders()->get('Retry-After')) {
                          $exceptionMessage .= '; Retry After: ' . $retry;
                     }
                     throw new PushException($exceptionMessage);
@@ -207,11 +212,15 @@ class Web extends BaseAdapter
     /**
      * Create message body.
      *
-     * @param Message $message
+     * @param MessageInterface $message
+     * @return string
      */
-    protected function createMessageBody(Message $message)
+    protected function createMessageBody(MessageInterface $message)
     {
-        $body = $message->getOptions();
+        if($message instanceof BaseOptionedModel)
+        {
+            $body = $message->getOptions();
+        }
         $body['message'] = $message->getText();
 
         return json_encode($body);
@@ -220,7 +229,7 @@ class Web extends BaseAdapter
     /**
      * Get the message encryptor.
      *
-     * @return \Openpp\WebPusherAdapter\Encrytptor\MessageEncryptor
+     * @return \Openpp\WebPushAdapter\Encryptor\MessageEncryptor
      */
     protected function getMessageEncryptor()
     {
@@ -252,7 +261,7 @@ class Web extends BaseAdapter
         $url = parse_url($endPoint);
         $origin = $url['scheme'] . '://' . $url['host'];
         if (isset($url['port'])) {
-            $origin = $orign . ':' . $url['port'];
+            $origin = $origin . ':' . $url['port'];
         }
 
         return $origin;
@@ -263,9 +272,8 @@ class Web extends BaseAdapter
      *
      * @param string $origin
      * @param \DateTime $expiration
-     * @param string $subject
      *
-     * @return Token
+     * @return \Lcobucci\JWT\Token
      */
     protected function createSignatureToken($origin, \DateTime $expiration = null)
     {
