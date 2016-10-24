@@ -145,8 +145,7 @@ class Web extends BaseAdapter
             }
 
             $messageObj = $push->getMessage();
-            if($messageObj instanceof BaseOptionedModel)
-            {
+            if ($messageObj instanceof BaseOptionedModel) {
                 $headers->addHeaderLine('TTL', $messageObj->getOption('ttl', $this->getParameter('ttl')));
 
                 if ($messageObj->hasOption('urgency')) {
@@ -217,8 +216,8 @@ class Web extends BaseAdapter
      */
     protected function createMessageBody(MessageInterface $message)
     {
-        if($message instanceof BaseOptionedModel)
-        {
+        $body = array();
+        if ($message instanceof BaseOptionedModel) {
             $body = $message->getOptions();
         }
         $body['message'] = $message->getText();
