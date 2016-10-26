@@ -34,6 +34,16 @@ class Web extends BaseAdapter
     private $messageEncryptor;
 
     /**
+     * @var DeviceCollection
+     */
+    private $notRegisteredDevices;
+
+    /**
+     * @var DeviceCollection
+     */
+    private $pushedDevices;
+
+    /**
      * {@inheritdoc}
      *
      * @throws \Sly\NotificationPusher\Exception\AdapterException
@@ -49,6 +59,9 @@ class Web extends BaseAdapter
                 throw new AdapterException(sprintf('%s %s does not exist', $keyName, $key));
             }
         }
+
+        $this->notRegisteredDevices = new DeviceCollection();
+        $this->pushedDevices = new DeviceCollection();
     }
 
     /**
@@ -96,7 +109,6 @@ class Web extends BaseAdapter
     public function push(PushInterface $push)
     {
         $client        = $this->getOpenedClient();
-        $pushedDevices = new DeviceCollection();
 
         $ecdsaCryptoKey = $this->getECDSACryptoKey();
         $orign     = null;
@@ -178,15 +190,20 @@ class Web extends BaseAdapter
                     throw new PushException('401 Forbidden; Authentication Error');
                     break;
                 case 400:
-                    // TODO: FCM returns 400 on sending to the unsubscribed endpoint.
                     throw new PushException('400 Bad Request; invalid message');
+                    break;
+                case 410:
+                    // FCM returns 410 on sending to the unsubscribed endpoint.
+                    $this->notRegisteredDevices->add($device);
                     break;
             }
 
-            $pushedDevices->add($device);
+            if ($this->response->isSuccess()) {
+                $this->pushedDevices->add($device);
+            }
         }
 
-        return $pushedDevices;
+        return $this->pushedDevices;
     }
 
     /**
@@ -206,6 +223,16 @@ class Web extends BaseAdapter
         }
 
         return $this->openedClient;
+    }
+
+    /**
+     * Get 'NotRegistered' devices.
+     *
+     * @return \Sly\NotificationPusher\Collection\DeviceCollection
+     */
+    public function getNotRegisteredDevices()
+    {
+        return $this->notRegisteredDevices;
     }
 
     /**
