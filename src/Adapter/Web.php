@@ -16,10 +16,8 @@ use JDR\JWS\ECDSA\ES256;
 use Openpp\WebPushAdapter\Encryptor\MessageEncryptor;
 use Openpp\WebPushAdapter\Util\PublicKeyUtil;
 
-
 /**
- * Web Push (VAPID) Adapter for sly/notification-pusher
- *
+ * Web Push (VAPID) Adapter for sly/notification-pusher.
  */
 class Web extends BaseAdapter
 {
@@ -48,11 +46,11 @@ class Web extends BaseAdapter
      *
      * @throws \Sly\NotificationPusher\Exception\AdapterException
      */
-    public function __construct(array $parameters = array())
+    public function __construct(array $parameters = [])
     {
         parent::__construct($parameters);
 
-        foreach (array('publicKey', 'privateKey') as $keyName) {
+        foreach (['publicKey', 'privateKey'] as $keyName) {
             $key = $this->getParameter($keyName);
 
             if (false === file_exists($key)) {
@@ -69,7 +67,7 @@ class Web extends BaseAdapter
      */
     public function getDefinedParameters()
     {
-        return array();
+        return [];
     }
 
     /**
@@ -77,9 +75,9 @@ class Web extends BaseAdapter
      */
     public function getDefaultParameters()
     {
-        return array(
+        return [
             'ttl' => 86400, // 1 day
-        );
+        ];
     }
 
     /**
@@ -87,10 +85,10 @@ class Web extends BaseAdapter
      */
     public function getRequiredParameters()
     {
-        return array(
+        return [
             'publicKey',
             'privateKey',
-        );
+        ];
     }
 
     /**
@@ -98,7 +96,7 @@ class Web extends BaseAdapter
      */
     public function supports($token)
     {
-        return is_string($token) && $token != '';
+        return is_string($token) && '' != $token;
     }
 
     /**
@@ -108,16 +106,16 @@ class Web extends BaseAdapter
      */
     public function push(PushInterface $push)
     {
-        $client        = $this->getOpenedClient();
+        $client = $this->getOpenedClient();
 
         $ecdsaCryptoKey = $this->getECDSACryptoKey();
-        $orign     = null;
-        $token     = null;
+        $orign = null;
+        $token = null;
 
         $message = $this->createMessageBody($push->getMessage());
 
         foreach ($push->getDevices() as $device) {
-            $endPoint  = $device->getToken();
+            $endPoint = $device->getToken();
 
             $newOrigin = $this->getOrigin($endPoint);
             if (is_null($token) || $orign != $newOrigin) {
@@ -127,8 +125,8 @@ class Web extends BaseAdapter
 
             $headers = $client->getRequest()->getHeaders();
             $headers
-                ->addHeaderLine('Crypto-Key', 'p256ecdsa="' . $ecdsaCryptoKey . '"')
-                ->addHeaderLine('Authorization', 'Bearer ' . $token)
+                ->addHeaderLine('Crypto-Key', 'p256ecdsa="'.$ecdsaCryptoKey.'"')
+                ->addHeaderLine('Authorization', 'Bearer '.$token)
             ;
 
             if (!empty($message)
@@ -144,10 +142,10 @@ class Web extends BaseAdapter
 
                 $headers
                     ->addHeaderLine('Content-Encoding', 'aesgcm')
-                    ->addHeaderLine('Encryption', 'keyid="p256dh";salt="' .$encryptor->getSalt() .'"')
+                    ->addHeaderLine('Encryption', 'keyid="p256dh";salt="'.$encryptor->getSalt().'"')
                 ;
                 $cryptoKeyHead = $headers->get('Crypto-Key');
-                $cryptoKeyValue = 'keyid="p256dh";dh="'. $encryptor->getServerPublicKey() .'"' . ';' . $cryptoKeyHead->getFieldValue();
+                $cryptoKeyValue = 'keyid="p256dh";dh="'.$encryptor->getServerPublicKey().'"'.';'.$cryptoKeyHead->getFieldValue();
                 $headers->addHeaderLine('Crypto-Key', $cryptoKeyValue);
 
                 $encType = 'application/octet-stream';
@@ -182,7 +180,7 @@ class Web extends BaseAdapter
                 case 503:
                     $exceptionMessage = '503 Server Unavailable';
                     if ($retry = $this->response->getHeaders()->get('Retry-After')) {
-                         $exceptionMessage .= '; Retry After: ' . $retry;
+                        $exceptionMessage .= '; Retry After: '.$retry;
                     }
                     throw new PushException($exceptionMessage);
                     break;
@@ -215,10 +213,10 @@ class Web extends BaseAdapter
     {
         if (!isset($this->openedClient)) {
             $this->openedClient = new \Zend\Http\Client(
-                null, array(
+                null, [
                     'adapter' => 'Zend\Http\Client\Adapter\Socket',
-                    'sslverifypeer' => false
-                )
+                    'sslverifypeer' => false,
+                ]
             );
         }
 
@@ -239,11 +237,12 @@ class Web extends BaseAdapter
      * Create message body.
      *
      * @param MessageInterface $message
+     *
      * @return string
      */
     protected function createMessageBody(MessageInterface $message)
     {
-        $body = array();
+        $body = [];
         if ($message instanceof BaseOptionedModel) {
             $body = $message->getOptions();
         }
@@ -285,9 +284,9 @@ class Web extends BaseAdapter
     protected function getOrigin($endPoint)
     {
         $url = parse_url($endPoint);
-        $origin = $url['scheme'] . '://' . $url['host'];
+        $origin = $url['scheme'].'://'.$url['host'];
         if (isset($url['port'])) {
-            $origin = $origin . ':' . $url['port'];
+            $origin = $origin.':'.$url['port'];
         }
 
         return $origin;
@@ -296,7 +295,7 @@ class Web extends BaseAdapter
     /**
      * Create the JWT signed by using ES256.
      *
-     * @param string $origin
+     * @param string    $origin
      * @param \DateTime $expiration
      *
      * @return \Lcobucci\JWT\Token
@@ -308,7 +307,7 @@ class Web extends BaseAdapter
         }
 
         $signer = new ES256();
-        $privateKey = new Key('file://' . $this->getParameter('privateKey'));
+        $privateKey = new Key('file://'.$this->getParameter('privateKey'));
 
         $builder = new Builder();
         $token = $builder

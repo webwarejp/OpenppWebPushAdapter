@@ -59,35 +59,21 @@ class MessageEncryptor
     protected $serializer;
 
     /**
-     * Constructor
+     * Initializes a new MessageEncryptor.
      */
     public function __construct()
     {
-        $this->generator  = CurveFactory::getGeneratorByName(NistCurve::NAME_P256);
-        $this->curve      = CurveFactory::getCurveByName(NistCurve::NAME_P256);
-        $this->adapter    = EccFactory::getAdapter();
+        $this->generator = CurveFactory::getGeneratorByName(NistCurve::NAME_P256);
+        $this->curve = CurveFactory::getCurveByName(NistCurve::NAME_P256);
+        $this->adapter = EccFactory::getAdapter();
         $this->serializer = new UncompressedPointSerializer($this->adapter);
 
         $this->initialize();
     }
 
     /**
-     * Generate key pare and salt.
-     */
-    private function initialize()
-    {
-        // generate key pair.
-        $this->privateKey = $this->generator->createPrivateKey();
-        $this->publicKey  = $this->privateKey->getPublicKey();
-
-        // generate salt
-        $this->salt = openssl_random_pseudo_bytes(16);
-
-        $this->publicKeyContent = hex2bin($this->serializer->serialize($this->publicKey->getPoint()));
-    }
-
-    /**
-     * @param boolean $raw
+     * @param bool $raw
+     *
      * @return string
      */
     public function getServerPublicKey($raw = false)
@@ -100,7 +86,8 @@ class MessageEncryptor
     }
 
     /**
-     * @param boolean $raw
+     * @param bool $raw
+     *
      * @return string
      */
     public function getSalt($raw = false)
@@ -120,7 +107,7 @@ class MessageEncryptor
     public static function padMessage($message)
     {
         $messageLen = strlen($message);
-        $padLen     = self::MAX_MESSAGE_LENGTH - $messageLen;
+        $padLen = self::MAX_MESSAGE_LENGTH - $messageLen;
 
         return pack('n*', $padLen).str_pad($message, $padLen + $messageLen, chr(0), STR_PAD_LEFT);
     }
@@ -128,14 +115,14 @@ class MessageEncryptor
     /**
      * Encrypt the message for Web Push.
      *
-     * @param string  $message
-     * @param string  $userPublicKey
-     * @param string  $userAuthToken
-     * @param boolean $regenerateKeys
+     * @param string $message
+     * @param string $userPublicKey
+     * @param string $userAuthToken
+     * @param bool   $regenerateKeys
      *
      * @return string
      */
-    public function encrypt($message, $userPublicKey,  $userAuthToken, $regenerateKeys = false)
+    public function encrypt($message, $userPublicKey, $userAuthToken, $regenerateKeys = false)
     {
         if (self::MAX_MESSAGE_LENGTH < strlen($message)) {
             throw new \RuntimeException(sprintf(
@@ -171,10 +158,25 @@ class MessageEncryptor
         if (version_compare(PHP_VERSION, '7.1') >= 0) {
             $encryptedText = openssl_encrypt($message, 'aes-128-gcm', $contentEncryptionKey, OPENSSL_RAW_DATA, $nonce, $tag);
         } else {
-            list($encryptedText, $tag) = \AESGCM\AESGCM::encrypt($contentEncryptionKey, $nonce, $message, "");
+            list($encryptedText, $tag) = \AESGCM\AESGCM::encrypt($contentEncryptionKey, $nonce, $message, '');
         }
 
-        return $encryptedText . $tag;
+        return $encryptedText.$tag;
+    }
+
+    /**
+     * Generate key pare and salt.
+     */
+    private function initialize()
+    {
+        // generate key pair.
+        $this->privateKey = $this->generator->createPrivateKey();
+        $this->publicKey = $this->privateKey->getPublicKey();
+
+        // generate salt
+        $this->salt = openssl_random_pseudo_bytes(16);
+
+        $this->publicKeyContent = hex2bin($this->serializer->serialize($this->publicKey->getPoint()));
     }
 
     /**
@@ -195,11 +197,11 @@ class MessageEncryptor
 
         $point = $userPublicKeyObject->getPoint()->mul($this->privateKey->getSecret())->getX();
 
-        return hex2bin($this->adapter->decHex((string)$point));
+        return hex2bin($this->adapter->decHex((string) $point));
     }
 
     /**
-     * HMAC-based Extract-and-Expand Key Derivation Function (HKDF)
+     * HMAC-based Extract-and-Expand Key Derivation Function (HKDF).
      *
      * This is used to derive a secure encryption key from a mostly-secure shared
      * secret.
@@ -211,10 +213,10 @@ class MessageEncryptor
      * See {@link https://www.rfc-editor.org/rfc/rfc5869.txt}
      * From {@link https://github.com/GoogleChrome/push-encryption-node/blob/master/src/encrypt.js}
      *
-     * @param string $salt A non-secret random value
-     * @param string $ikm  Input keying material
-     * @param string $info  Application-specific context
-     * @param integer $length  The length (in bytes) of the required output key
+     * @param string $salt   A non-secret random value
+     * @param string $ikm    Input keying material
+     * @param string $info   Application-specific context
+     * @param int    $length The length (in bytes) of the required output key
      *
      * @return string
      */
@@ -223,7 +225,7 @@ class MessageEncryptor
         // extract
         $prkHmac = hash_hmac(self::HMAC_ALGO, $ikm, $salt, true);
         // expand
-        $infoHmac = hash_hmac(self::HMAC_ALGO, $info . chr(1), $prkHmac, true);
+        $infoHmac = hash_hmac(self::HMAC_ALGO, $info.chr(1), $prkHmac, true);
 
         return substr($infoHmac, 0, $length);
     }
@@ -231,7 +233,7 @@ class MessageEncryptor
     /**
      * context = label || 0x00 ||
      *           length(recipient_public) || recipient_public ||
-     *           length(sender_public) || sender_public
+     *           length(sender_public) || sender_public.
      *
      * @param string $userPublicKey
      *
@@ -241,14 +243,14 @@ class MessageEncryptor
     {
         $label = 'P-256';
         // The two length fields are encoded as a two octet unsigned integer in network byte order.
-        $recipientPublicLength = chr(0) . chr(strlen($userPublicKey));
-        $senderPublicLength = chr(0) . chr(strlen($this->publicKeyContent));
+        $recipientPublicLength = chr(0).chr(strlen($userPublicKey));
+        $senderPublicLength = chr(0).chr(strlen($this->publicKeyContent));
 
-        return $label . chr(0) . $recipientPublicLength . $userPublicKey . $senderPublicLength . $this->publicKeyContent;
+        return $label.chr(0).$recipientPublicLength.$userPublicKey.$senderPublicLength.$this->publicKeyContent;
     }
 
     /**
-     * info = "Content-Encoding: $type" || 0x00 || context
+     * info = "Content-Encoding: $type" || 0x00 || context.
      *
      * @param string $type
      * @param string $context
@@ -257,6 +259,6 @@ class MessageEncryptor
      */
     private static function createInfo($type, $context)
     {
-        return 'Content-Encoding: ' . $type . chr(0). $context;
+        return 'Content-Encoding: '.$type.chr(0).$context;
     }
 }
