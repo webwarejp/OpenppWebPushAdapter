@@ -2,11 +2,11 @@
 
 namespace Openpp\WebPushAdapter\Encryptor;
 
-use Mdanter\Ecc\EccFactory;
-use Mdanter\Ecc\Serializer\Point\UncompressedPointSerializer;
+use Base64Url\Base64Url;
 use Mdanter\Ecc\Curves\CurveFactory;
 use Mdanter\Ecc\Curves\NistCurve;
-use Base64Url\Base64Url;
+use Mdanter\Ecc\EccFactory;
+use Mdanter\Ecc\Serializer\Point\UncompressedPointSerializer;
 
 class MessageEncryptor
 {
