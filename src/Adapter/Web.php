@@ -2,19 +2,19 @@
 
 namespace Openpp\WebPushAdapter\Adapter;
 
+use Base64Url\Base64Url;
+use JDR\JWS\ECDSA\ES256;
+use Lcobucci\JWT\Builder;
+use Lcobucci\JWT\Signer\Key;
+use Openpp\WebPushAdapter\Encryptor\MessageEncryptor;
+use Openpp\WebPushAdapter\Util\PublicKeyUtil;
 use Sly\NotificationPusher\Adapter\BaseAdapter;
+use Sly\NotificationPusher\Collection\DeviceCollection;
+use Sly\NotificationPusher\Exception\AdapterException;
+use Sly\NotificationPusher\Exception\PushException;
 use Sly\NotificationPusher\Model\BaseOptionedModel;
 use Sly\NotificationPusher\Model\MessageInterface;
 use Sly\NotificationPusher\Model\PushInterface;
-use Sly\NotificationPusher\Exception\PushException;
-use Sly\NotificationPusher\Exception\AdapterException;
-use Sly\NotificationPusher\Collection\DeviceCollection;
-use Base64Url\Base64Url;
-use Lcobucci\JWT\Builder;
-use Lcobucci\JWT\Signer\Key;
-use JDR\JWS\ECDSA\ES256;
-use Openpp\WebPushAdapter\Encryptor\MessageEncryptor;
-use Openpp\WebPushAdapter\Util\PublicKeyUtil;
 
 /**
  * Web Push (VAPID) Adapter for sly/notification-pusher.
@@ -182,6 +182,7 @@ class Web extends BaseAdapter
                     if ($retry = $this->response->getHeaders()->get('Retry-After')) {
                         $exceptionMessage .= '; Retry After: '.$retry;
                     }
+
                     throw new PushException($exceptionMessage);
                     break;
                 case 401:
@@ -193,6 +194,7 @@ class Web extends BaseAdapter
                 case 410:
                     // FCM returns 410 on sending to the unsubscribed endpoint.
                     $this->notRegisteredDevices->add($device);
+
                     break;
             }
 
