@@ -2,6 +2,8 @@
 
 Web Push (VAPID) adapter for [sly/notification-pusher](https://github.com/Ph3nol/NotificationPusher)
 
+[![StyleCI](https://styleci.io/repos/66535119/shield?branch=master)](https://styleci.io/repos/66535119)
+
 ## Installation
 
     $ composer require openpp/web-push-adapter
