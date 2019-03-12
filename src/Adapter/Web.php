@@ -271,7 +271,7 @@ class Web extends BaseAdapter
      * Get the ECDSA public key encoded by the URL- and filename-safe variant of
      * base-64 [RFC4648] with padding removed.
      */
-    protected function getECDSACryptoKey()
+    public function getECDSACryptoKey()
     {
         return Base64Url::encode(PublicKeyUtil::getKeyFromPem($this->getParameter('publicKey')));
     }
