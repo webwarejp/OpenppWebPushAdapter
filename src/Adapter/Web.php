@@ -145,7 +145,11 @@ class Web extends BaseAdapter
                     ->addHeaderLine('Encryption', 'keyid="p256dh";salt="'.$encryptor->getSalt().'"')
                 ;
                 $cryptoKeyHead = $headers->get('Crypto-Key');
-                $cryptoKeyValue = 'keyid="p256dh";dh="'.$encryptor->getServerPublicKey().'"'.';'.$cryptoKeyHead->getFieldValue();
+                $cryptoKeyValue = sprintf(
+                    'keyid="p256dh";dh="%s";%s',
+                    $encryptor->getServerPublicKey(),
+                    $cryptoKeyHead->getFieldValue()
+                );
                 $headers->addHeaderLine('Crypto-Key', $cryptoKeyValue);
 
                 $encType = 'application/octet-stream';
@@ -214,12 +218,10 @@ class Web extends BaseAdapter
     public function getOpenedClient()
     {
         if (!isset($this->openedClient)) {
-            $this->openedClient = new \Zend\Http\Client(
-                null, [
-                    'adapter' => 'Zend\Http\Client\Adapter\Socket',
-                    'sslverifypeer' => false,
-                ]
-            );
+            $this->openedClient = new \Zend\Http\Client(null, [
+                'adapter' => 'Zend\Http\Client\Adapter\Socket',
+                'sslverifypeer' => false,
+            ]);
         }
 
         return $this->openedClient;
