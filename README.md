@@ -20,19 +20,21 @@ Web Push (VAPID) adapter for [sly/notification-pusher](https://github.com/Ph3nol
     ));
     
     // Set the device(s) to push the notification to.
-    $device1 = new \Sly\NotificationPusher\Model\Device();
-    $device1->setToken('https://updates.push.services.mozilla.com/wpush/v2/abc...') // endpoint for firefox
-            ->setParameters(array(
-                'publicKey' => 'BJe6mzZYL9nfT4GGH4abkLLTirge...', // user agent public key
-                'authToken' => '4dAIFNwyT3-wZ58wB09T9Q' // user agent authentication secret
-              ));
-    
-    $device2 = new \Sly\NotificationPusher\Model\Device();
-    $device2->setToken('https://fcm.googleapis.com/fcm/send/abc...') // endpoint for chrome
-            ->setParameters(array(
-                'publicKey' => 'BPh5gqtHha5G3XQD4hBslHBcVbKgh...',
-                'authToken' => 'W9jjJNUXOZXnFhCfKwOYhQ'
-              ));
+    $device1 = new \Sly\NotificationPusher\Model\Device(
+        'https://updates.push.services.mozilla.com/wpush/v2/abc...', // endpoint for firefox
+        array(
+          'publicKey' => 'BJe6mzZYL9nfT4GGH4abkLLTirge...', // user agent public key
+          'authToken' => '4dAIFNwyT3-wZ58wB09T9Q' // user agent authentication secret
+        )
+    );
+
+    $device2 = new \Sly\NotificationPusher\Model\Device(
+        'https://fcm.googleapis.com/fcm/send/abc...', // endpoint for chrome
+        array(
+          'publicKey' => 'BPh5gqtHha5G3XQD4hBslHBcVbKgh...',
+          'authToken' => 'W9jjJNUXOZXnFhCfKwOYhQ'
+        )
+    );
      // ...
     
     $devices = new Sly\NotificationPusher\Collection\DeviceCollection(array(
